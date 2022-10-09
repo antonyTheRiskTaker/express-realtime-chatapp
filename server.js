@@ -3,7 +3,7 @@ const http = require('http'); // This package is needed to use socket.io
 const express = require('express');
 const socketio = require('socket.io');
 const formatMessage = require('./utils/messages');
-const { 
+const {
   userJoin,
   getCurrentUser,
   userLeave,
@@ -39,6 +39,12 @@ io.on('connection', socket => {
         'message',
         formatMessage(botName, `${user.username} has joined the chat`)
       );
+
+    // Send users and room info (shown on the chat sidebar)
+    io.to(user.room).emit('roomUsers', {
+      room: user.room,
+      users: getRoomUsers(user.room)
+    });
   });
 
   // Listen for chatMessage (see client JS)
@@ -50,8 +56,19 @@ io.on('connection', socket => {
 
   // Runs when client disconnects
   socket.on('disconnect', () => {
-    // (Line below) all users can see the message
-    io.emit('message', formatMessage(botName, 'A user has left the chat'));
+    const user = userLeave(socket.id);
+
+    if (user) {
+      // (Line below) all users can see the message
+      io.to(user.room).emit('message', formatMessage(botName, `${user.username} has left the chat`));
+
+      // Send users and room info to update the current chat sidebar
+      io.to(user.room).emit('roomUsers', {
+        room: user.room,
+        users: getRoomUsers(user.room)
+      });
+    }
+
   });
 });
 

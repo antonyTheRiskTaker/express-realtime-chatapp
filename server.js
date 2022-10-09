@@ -17,6 +17,10 @@ const botName = 'ChatCord Bot';
 // Run when client connects
 io.on('connection', socket => {
   socket.on('joinRoom', ({ username, room }) => {
+    const user = userJoin(socket.id, username, room);
+
+    socket.join(user.room);
+
     // (Line below) once connected, this line sends out an event (in this case, the event name is 'message' but you can choose any name you want) and message which will be received from the client JS
     // (Line below) only the user sees this message
     // Welcome current user
@@ -24,7 +28,12 @@ io.on('connection', socket => {
 
     // Broadcast when a user connects
     // (Line below) anyone but the user sees the message
-    socket.broadcast.emit('message', formatMessage(botName, 'A user has joined the chat'));
+    socket.broadcast
+      .to(user.room)
+      .emit(
+        'message',
+        formatMessage(botName, `${user.username} has joined the chat`)
+      );
   });
 
   // Listen for chatMessage (see client JS)
